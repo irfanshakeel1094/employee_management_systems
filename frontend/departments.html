@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Departments - Employee Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>EMS</h2>
+                <p>Employee Management</p>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="employees.html">Employees</a></li>
+                <li><a href="attendance.html">Attendance</a></li>
+                <li><a href="salary.html">Salary</a></li>
+                <li><a href="departments.html" class="active">Departments</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1>Departments</h1>
+                <div class="user-info">
+                    <span id="userName">Admin</span>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23007bff'/%3E%3Ctext x='20' y='26' text-anchor='middle' fill='white' font-weight='bold' font-size='20'%3EA%3C/text%3E%3C/svg%3E" alt="User Avatar">
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content">
+                <div id="messageContainer"></div>
+
+                <div class="form-container" style="margin-bottom: 30px;">
+                    <h3>Add New Department</h3>
+                    <form id="departmentForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="deptName">Department Name *</label>
+                                <input type="text" id="deptName" name="name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="deptDesc">Description</label>
+                                <textarea id="deptDesc" name="description" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Add Department</button>
+                    </form>
+                </div>
+
+                <h2>All Departments</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="departmentsTable">
+                        <tr>
+                            <td colspan="4" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        function checkAuth() {
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'index.html';
+            }
+            document.getElementById('userName').textContent = localStorage.getItem('currentUser') || 'User';
+        }
+
+        async function loadDepartments() {
+            try {
+                const response = await fetch(`${API_BASE}/departments`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    displayDepartments(data.data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error loading departments', 'error');
+            }
+        }
+
+        function displayDepartments(departments) {
+            const tbody = document.getElementById('departmentsTable');
+
+            if (departments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No departments found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = departments.map(dept => `
+                <tr>
+                    <td>${dept.id}</td>
+                    <td>${dept.name}</td>
+                    <td>${dept.description || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-delete" onclick="deleteDepartment(${dept.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteDepartment(id) {
+            if (!confirm('Delete this department?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/departments/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Department deleted successfully', 'success');
+                    loadDepartments();
+                } else {
+                    showMessage('Error deleting department', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error deleting department', 'error');
+            }
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageRow = document.createElement('div');
+            messageRow.className = `alert alert-${type}`;
+            messageRow.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(messageRow);
+            setTimeout(() => messageRow.remove(), 3000);
+        }
+
+        document.getElementById('departmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                name: document.getElementById('deptName').value,
+                description: document.getElementById('deptDesc').value || null
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/departments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Department added successfully!', 'success');
+                    document.getElementById('departmentForm').reset();
+                    loadDepartments();
+                } else {
+                    showMessage(data.message || 'Error adding department', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error adding department', 'error');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        });
+
+        checkAuth();
+        loadDepartments();
+    </script>
+</body>
+</html>
