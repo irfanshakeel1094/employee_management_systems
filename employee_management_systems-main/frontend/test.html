@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #333; }
+        .test-button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        #results { margin-top: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; white-space: pre-wrap; font-size: 12px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Test Console</h1>
+        <button class="test-button" onclick="testEmployees()">Test Employees</button>
+        <button class="test-button" onclick="testDepartments()">Test Departments</button>
+        <button class="test-button" onclick="testHealth()">Test Health</button>
+        <button class="test-button" onclick="clearResults()">Clear</button>
+
+        <div id="results">Ready for testing...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5003/api';
+
+        function log(message, type = 'log') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            results.innerHTML += `<span style="color: ${color};">[${timestamp}] ${message}</span>\n`;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = 'Ready for testing...\n';
+        }
+
+        async function testEmployees() {
+            log('Testing GET /api/employees...');
+            try {
+                const response = await fetch(`${API_BASE}/employees`);
+                const data = await response.json();
+                if (data.success) {
+                    log(`✓ Success! Found ${data.data.length} employees`, 'success');
+                    log(`First employee: ${JSON.stringify(data.data[0], null, 2)}`);
+                } else {
+                    log(`✗ Failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDepartments() {
+            log('Testing GET /api/departments...');
+            try {
+                const response = await fetch(`${API_BASE}/departments`);
+                const data = await response.json();
+                if (data.success) {
+                    log(`✓ Success! Found ${data.data.length} departments`, 'success');
+                    log(`First department: ${JSON.stringify(data.data[0], null, 2)}`);
+                } else {
+                    log(`✗ Failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHealth() {
+            log('Testing GET /api/health...');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                log(`✓ Server is running!`, 'success');
+                log(`Response: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

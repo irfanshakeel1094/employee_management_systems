@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Employee - Employee Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>EMS</h2>
+                <p>Employee Management</p>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="employees.html" class="active">Employees</a></li>
+                <li><a href="attendance.html">Attendance</a></li>
+                <li><a href="salary.html">Salary</a></li>
+                <li><a href="departments.html">Departments</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1>Edit Employee</h1>
+                <div class="user-info">
+                    <span id="userName">Admin</span>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23007bff'/%3E%3Ctext x='20' y='26' text-anchor='middle' fill='white' font-weight='bold' font-size='20'%3EA%3C/text%3E%3C/svg%3E" alt="User Avatar">
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content">
+                <div class="form-container">
+                    <form id="editEmployeeForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">First Name *</label>
+                                <input type="text" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name *</label>
+                                <input type="text" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">Email *</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone</label>
+                                <input type="tel" id="phone" name="phone">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="department">Department</label>
+                                <select id="department" name="department">
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="position">Position</label>
+                                <input type="text" id="position" name="position">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hireDate">Hire Date</label>
+                                <input type="date" id="hireDate" name="hireDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select id="status" name="status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="on_leave">On Leave</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="address">Address</label>
+                                <textarea id="address" name="address" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="messageContainer"></div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Update Employee</button>
+                            <a href="employees.html" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5003/api';
+        let employeeId;
+
+        function checkAuth() {
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'index.html';
+            }
+            document.getElementById('userName').textContent = localStorage.getItem('currentUser') || 'User';
+        }
+
+        function getEmployeeIdFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        async function loadDepartments() {
+            try {
+                const response = await fetch(`${API_BASE}/departments`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const select = document.getElementById('department');
+                    select.innerHTML = '<option value="">Select Department</option>';
+                    data.data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.department_id;
+                        option.textContent = dept.department_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading departments:', error);
+            }
+        }
+
+        async function loadEmployee() {
+            employeeId = getEmployeeIdFromURL();
+            if (!employeeId) {
+                showMessage('Employee ID not found', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/employees/${employeeId}`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const emp = data.data;
+                    document.getElementById('firstName').value = emp.first_name;
+                    document.getElementById('lastName').value = emp.last_name;
+                    document.getElementById('email').value = emp.email;
+                    document.getElementById('phone').value = emp.phone || '';
+                    document.getElementById('position').value = emp.position || '';
+                    document.getElementById('hireDate').value = emp.hire_date || '';
+                    document.getElementById('status').value = emp.status || 'active';
+                    document.getElementById('address').value = emp.address || '';
+                    document.getElementById('department').value = emp.department_id || '';
+                } else {
+                    showMessage('Error loading employee', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error loading employee', 'error');
+            }
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageRow = document.createElement('div');
+            messageRow.className = `alert alert-${type}`;
+            messageRow.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(messageRow);
+            if (type === 'success') {
+                setTimeout(() => window.location.href = 'employees.html', 2000);
+            }
+        }
+
+        document.getElementById('editEmployeeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value || null,
+                department_id: document.getElementById('department').value || null,
+                position: document.getElementById('position').value || null,
+                hire_date: document.getElementById('hireDate').value || null,
+                status: document.getElementById('status').value,
+                address: document.getElementById('address').value || null
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/employees/${employeeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Employee updated successfully!', 'success');
+                } else {
+                    showMessage(data.message || 'Error updating employee', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error updating employee', 'error');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        });
+
+        checkAuth();
+        loadDepartments();
+        loadEmployee();
+    </script>
+</body>
+</html>

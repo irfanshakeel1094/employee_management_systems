@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Employee Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>EMS</h2>
+                <p>Employee Management</p>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="employees.html">Employees</a></li>
+                <li><a href="attendance.html">Attendance</a></li>
+                <li><a href="salary.html">Salary</a></li>
+                <li><a href="departments.html">Departments</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1>Dashboard</h1>
+                <div class="user-info">
+                    <span id="userName">Admin</span>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23007bff'/%3E%3Ctext x='20' y='26' text-anchor='middle' fill='white' font-weight='bold' font-size='20'%3EA%3C/text%3E%3C/svg%3E" alt="User Avatar">
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="content">
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3>Total Employees</h3>
+                        <p class="stat-number" id="totalEmployees">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Departments</h3>
+                        <p class="stat-number" id="totalDepartments">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Present Today</h3>
+                        <p class="stat-number" id="presentToday">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>On Leave</h3>
+                        <p class="stat-number" id="onLeave">0</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2>Quick Actions</h2>
+                    <div class="action-buttons">
+                        <a href="add_employee.html" class="btn btn-primary">Add Employee</a>
+                        <a href="employees.html" class="btn btn-secondary">View Employees</a>
+                        <a href="attendance.html" class="btn btn-secondary">Mark Attendance</a>
+                        <a href="salary.html" class="btn btn-secondary">View Salaries</a>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2>Recent Employees</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentEmployeesTable">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5003/api';
+
+        // Check authentication
+        function checkAuth() {
+            if (!localStorage.getItem('isLoggedIn')) {
+                window.location.href = 'index.html';
+            }
+            document.getElementById('userName').textContent = localStorage.getItem('currentUser') || 'User';
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Load employees
+                const employeesRes = await fetch(`${API_BASE}/employees`);
+                const employeesData = await employeesRes.json();
+                document.getElementById('totalEmployees').textContent = employeesData.data?.length || 0;
+
+                // Load departments
+                const deptRes = await fetch(`${API_BASE}/departments`);
+                const deptData = await deptRes.json();
+                document.getElementById('totalDepartments').textContent = deptData.data?.length || 0;
+
+                // Display recent employees
+                if (employeesData.success && employeesData.data) {
+                    const recent = employeesData.data.slice(0, 5);
+                    const tableBody = document.getElementById('recentEmployeesTable');
+                    tableBody.innerHTML = recent.map(emp => `
+                        <tr>
+                            <td>${emp.employee_id}</td>
+                            <td>${emp.first_name} ${emp.last_name}</td>
+                            <td>${emp.email}</td>
+                            <td>${emp.department_name || 'N/A'}</td>
+                            <td><span class="status ${emp.status}">${emp.status}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        });
+
+        // Initialize
+        checkAuth();
+        loadDashboardData();
+    </script>
+</body>
+</html>
